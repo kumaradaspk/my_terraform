@@ -1,0 +1,32 @@
+variable "az_mapping" {
+    default = {
+        "us-west-1" = "a,c"
+    }
+}
+
+resource "aws_subnet" "management" {
+    vpc_id = "${aws_vpc.default.id}"
+    count = "${length(split(",", lookup(var.az_mapping, var.region)))}"
+
+    availability_zone = "${var.region}${element(split(",", lookup(var.az_mapping, var.region)), count.index)}"
+    cidr_block = "172.31.${count.index}.0/24"
+    map_public_ip_on_launch = true
+    tags {
+        Name = "management-${element(split(",", lookup(var.az_mapping, var.region)), count.index)}"
+    }
+}
+
+resource "aws_instance" "consul" {
+    count = "${length(split(",", lookup(var.az_mapping, var.region)))}"
+
+    subnet_id = "${element(aws_subnet.management.*.id, count.index)}"
+    ami = "${lookup(var.coreos_amis, var.region)}"
+    instance_type = "t2.small"
+    vpc_security_group_ids = [
+        "${aws_security_group.default.id}",
+        "${aws_security_group.ssh_boston.id}",
+    ]
+    tags {
+        Name = "consul-${format("%03d", count.index)}.${var.env_name}"
+    }
+}

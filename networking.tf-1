@@ -1,0 +1,95 @@
+data "aws_availability_zones" "available" {}
+
+resource "aws_vpc" "kumaradas-73721-global-vpc" {
+  #cidr_block = "10.0.0.0/16"
+  cidr_block = "${var.network_address_space}"
+
+  tags {
+    Name = "kumaradas-73721-main-vpc"
+  }
+}
+
+resource "aws_internet_gateway" "kumaradas-73721-poc-gw" {
+  vpc_id = "${aws_vpc.kumaradas-73721-global-vpc.id}"
+
+  tags {
+    Name = "kumaradas-73721-poc-gw"
+  }
+}
+
+resource "aws_subnet" "kumaradas-73721-private-subnet1" {
+  vpc_id                  = "${aws_vpc.kumaradas-73721-global-vpc.id}"
+  cidr_block              = "${var.subnet1_address_space}"
+  map_public_ip_on_launch = "false"
+  availability_zone       = "${data.aws_availability_zones.available.names[0]}"
+
+  tags {
+    Name = "kumaradas-main-private-subnet1"
+  }
+}
+
+resource "aws_subnet" "kumaradas-73721-private-subnet2" {
+  vpc_id                  = "${aws_vpc.kumaradas-73721-global-vpc.id}"
+  cidr_block              = "${var.subnet2_address_space}"
+  map_public_ip_on_launch = "false"
+  availability_zone       = "${data.aws_availability_zones.available.names[2]}"
+
+  tags {
+    Name = "kumaradas-main-private-subnet2"
+  }
+}
+
+resource "aws_subnet" "kumaradas-73721-public-subnet1" {
+  vpc_id                  = "${aws_vpc.kumaradas-73721-global-vpc.id}"
+  cidr_block              = "${var.subnet3_address_space}"
+  map_public_ip_on_launch = "true"
+  availability_zone       = "${data.aws_availability_zones.available.names[0]}"
+
+  tags {
+    Name = "kumaradas-main-public-subnet1"
+  }
+}
+
+resource "aws_subnet" "kumaradas-73721-public-subnet2" {
+  vpc_id                  = "${aws_vpc.kumaradas-73721-global-vpc.id}"
+  cidr_block              = "${var.subnet4_address_space}"
+  map_public_ip_on_launch = "true"
+  availability_zone       = "${data.aws_availability_zones.available.names[2]}"
+
+  tags {
+    Name = "kumaradas-main-public-subnet2"
+  }
+}
+
+resource "aws_route_table" "kumaradas-73721-poc-vpc-route_table" {
+  vpc_id = "${aws_vpc.kumaradas-73721-global-vpc.id}"
+
+  route = {
+    cidr_block = "0.0.0.0/0"
+    gateway_id = "${aws_internet_gateway.kumaradas-73721-poc-gw.id}"
+  }
+
+  tags {
+    Name = "kumaradas-73721-poc-vpc-route_table"
+  }
+}
+
+resource "aws_route_table_association" "rta-kumaradas-73721-private-subnet1" {
+  subnet_id      = "${aws_subnet.kumaradas-73721-private-subnet1.id}"
+  route_table_id = "${aws_route_table.kumaradas-73721-poc-vpc-route_table.id}"
+}
+
+resource "aws_route_table_association" "rta-kumaradas-73721-private-subnet2" {
+  subnet_id      = "${aws_subnet.kumaradas-73721-private-subnet2.id}"
+  route_table_id = "${aws_route_table.kumaradas-73721-poc-vpc-route_table.id}"
+}
+
+resource "aws_route_table_association" "rta-kumaradas-73721-public-subnet1" {
+  subnet_id      = "${aws_subnet.kumaradas-73721-public-subnet1.id}"
+  route_table_id = "${aws_route_table.kumaradas-73721-poc-vpc-route_table.id}"
+}
+
+resource "aws_route_table_association" "rta-kumaradas-73721-public-subnet2" {
+  subnet_id      = "${aws_subnet.kumaradas-73721-public-subnet2.id}"
+  route_table_id = "${aws_route_table.kumaradas-73721-poc-vpc-route_table.id}"
+}

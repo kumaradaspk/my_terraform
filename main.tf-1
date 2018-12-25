@@ -1,0 +1,81 @@
+resource "aws_elb" "kumaradas-73721-poc-public-elb" {
+  name            = "kumaradas-73721-poc-public-elb"
+  subnets         = ["${aws_subnet.kumaradas-73721-public-subnet1.id}", "${aws_subnet.kumaradas-73721-public-subnet2.id}"]
+  security_groups = ["${aws_security_group.kumaradas-73721-poc-allow-frm-all-IP-80.id}"]
+  instances       = ["${aws_instance.kumaradas-73721-poc1.id}", "${aws_instance.kumaradas-73721-poc2.id}"]
+
+  listener {
+    instance_port     = 80
+    instance_protocol = "http"
+    lb_port           = 80
+    lb_protocol       = "http"
+  }
+
+  health_check {
+    healthy_threshold   = 2
+    unhealthy_threshold = 2
+    timeout             = 3
+    target              = "TCP:80"
+    interval            = 30
+  }
+
+  tags {
+    Name = "kumaradas-73721-poc-public-elb"
+  }
+}
+
+resource "aws_instance" "kumaradas-73721-poc1" {
+  ami                    = "ami-08419d23bf91152e4"
+  instance_type          = "t2.micro"
+  key_name               = "${var.aws_key_name}"
+  subnet_id              = "${aws_subnet.kumaradas-73721-public-subnet1.id}"
+  vpc_security_group_ids = ["${aws_security_group.kumaradas-73721-poc-allow-frm-all-IP.id}"]
+
+  tags {
+    Name = "kumaradas-73721-poc1"
+  }
+
+  connection {
+    user        = "ec2-user"
+    private_key = "${file(var.aws_key_path)}"
+  }
+
+  provisioner "remote-exec" {
+    inline = [
+      "sudo yum install httpd -y",
+      "sudo service httpd start",
+    ]
+  }
+}
+
+resource "aws_instance" "kumaradas-73721-poc2" {
+  ami                    = "ami-08419d23bf91152e4"
+  instance_type          = "t2.micro"
+  key_name               = "${var.aws_key_name}"
+  subnet_id              = "${aws_subnet.kumaradas-73721-public-subnet2.id}"
+  vpc_security_group_ids = ["${aws_security_group.kumaradas-73721-poc-allow-frm-all-IP.id}"]
+
+  tags {
+    Name = "kumaradas-73721-poc2"
+  }
+
+  connection {
+    user        = "ec2-user"
+    private_key = "${file(var.aws_key_path)}"
+  }
+
+  provisioner "remote-exec" {
+    inline = [
+      "sudo yum install httpd -y",
+      "sudo service httpd start",
+    ]
+  }
+}
+
+output ip {
+  value = ["${aws_instance.kumaradas-73721-poc1.public_ip}", "${aws_instance.kumaradas-73721-poc2.public_ip}"]
+}
+
+output elb_hostname {
+  value = "${aws_elb.kumaradas-73721-poc-public-elb.dns_name}"
+}
