@@ -34,17 +34,25 @@ variable "subnet4_address_space" {
 }
 
 variable "public_subnet_count" {
-  default = "2"
+  default = "3"
 }
 
 variable "private_subnet_count" {
-  default = "2"
+  default = "4"
 }
 
 variable "public_vm_instance_count" {
-  default = "3"
+  default = "4"
 }
 
 variable "private_vm_instance_count" {
   default = "4"
+}
+
+variable "kumaradas-73721-poc-public-vms_volume_size_data" {
+  default = "1"
+}
+
+variable "block_device_name" {
+  default = "/dev/sdh"
 }

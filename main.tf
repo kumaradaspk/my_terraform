@@ -7,7 +7,8 @@ resource "aws_instance" "kumaradas-73721-poc-public-vms" {
   vpc_security_group_ids = ["${aws_security_group.kumaradas-73721-poc-allow-frm-all-IP.id}"]
 
   tags {
-    Name = "kumaradas-73721-poc-public-vms-${count.index}"
+    Name   = "kumaradas-73721-poc-public-vms-${count.index}"
+    Backup = "true"
   }
 
   connection {
@@ -48,10 +49,33 @@ resource "aws_elb" "kumaradas-73721-poc-public-elb" {
   }
 }
 
+resource "aws_ebs_volume" "kumaradas_73721_ebs_volume" {
+  count             = "${length(aws_instance.kumaradas-73721-poc-public-vms.*.id)}"
+  availability_zone = "${element(aws_instance.kumaradas-73721-poc-public-vms.*.availability_zone,count.index)}"
+  size              = "${var.kumaradas-73721-poc-public-vms_volume_size_data}"
+  type              = "gp2"
+
+  tags {
+    Name   = "kumaradas_73721_ebs_volume-${count.index}"
+    Backup = "true"
+  }
+}
+
+resource "aws_volume_attachment" "data-ebs-volumes-attach" {
+  count       = "${length(aws_instance.kumaradas-73721-poc-public-vms.*.id)}"
+  device_name = "${var.block_device_name}"
+  volume_id   = "${aws_ebs_volume.kumaradas_73721_ebs_volume.*.id[count.index]}"
+  instance_id = "${aws_instance.kumaradas-73721-poc-public-vms.*.id[count.index]}"
+}
+
 output public_vm_instance_ip {
   value = "${join(" , ",aws_instance.kumaradas-73721-poc-public-vms.*.public_ip)}"
 }
 
 output kumaradas-73721-poc-public-elb {
   value = "${aws_elb.kumaradas-73721-poc-public-elb.dns_name}"
+}
+
+output instnaces_AZ {
+  value = "${join(" , ",aws_instance.kumaradas-73721-poc-public-vms.*.availability_zone)}"
 }

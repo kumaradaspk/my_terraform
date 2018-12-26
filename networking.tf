@@ -24,24 +24,24 @@ resource "aws_subnet" "kumaradas_73721_public_subnet" {
   map_public_ip_on_launch = true
 
   #availability_zone       = "${data.aws_availability_zones.available.names[count.index + 1]}"
-  availability_zone = "${element(split(",",var.aws_availability_zones[var.aws_region]), count.index)}"
+  availability_zone = "${element(split(",",var.aws_availability_zones[var.aws_region]), count.index % var.public_subnet_count)}"
 
   tags {
-    Name = "kumaradas_73721_public_subnet-${count.index + 1}"
+    Name = "kumaradas_73721_public_subnet-${count.index}"
   }
 }
 
 resource "aws_subnet" "kumaradas_73721_private_subnet" {
-  count                   = "${var.public_subnet_count}"
+  count                   = "${var.private_subnet_count}"
   cidr_block              = "${cidrsubnet(var.network_address_space,8,count.index + var.public_subnet_count + 1)}"
   vpc_id                  = "${aws_vpc.kumaradas-73721-global-vpc.id}"
   map_public_ip_on_launch = true
 
   #availability_zone       = "${data.aws_availability_zones.available.names[count.index + 1]}"
-  availability_zone = "${element(split(",",var.aws_availability_zones[var.aws_region]), count.index)}"
+  availability_zone = "${element(split(",",var.aws_availability_zones[var.aws_region]), count.index % var.private_subnet_count)}"
 
   tags {
-    Name = "kumaradas_73721_private_subnet-${count.index + 1}"
+    Name = "kumaradas_73721_private_subnet-${count.index}"
   }
 }
 
@@ -65,7 +65,7 @@ resource "aws_route_table_association" "rta-kumaradas-73721-public-subnet" {
 }
 
 resource "aws_route_table_association" "rta-kumaradas-73721-private-subnet" {
-  count          = "${var.public_subnet_count + var.private_subnet_count}"
-  subnet_id      = "${element(aws_subnet.kumaradas_73721_private_subnet.*.id,count.index)}"
+  count          = "${var.private_subnet_count}"
+  subnet_id      = "${element(aws_subnet.kumaradas_73721_private_subnet.*.id,count.index + var.public_subnet_count + 1)}"
   route_table_id = "${aws_route_table.kumaradas-73721-poc-vpc-route_table.id}"
 }
