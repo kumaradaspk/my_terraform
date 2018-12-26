@@ -49,5 +49,9 @@ resource "aws_elb" "kumaradas-73721-poc-public-elb" {
 }
 
 output public_vm_instance_ip {
-  value = "${join(",",aws_instance.kumaradas-73721-poc-public-vms.*.public_ip)}"
+  value = "${join(" , ",aws_instance.kumaradas-73721-poc-public-vms.*.public_ip)}"
+}
+
+output kumaradas-73721-poc-public-elb {
+  value = "${aws_elb.kumaradas-73721-poc-public-elb.dns_name}"
 }

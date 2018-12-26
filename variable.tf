@@ -42,7 +42,7 @@ variable "private_subnet_count" {
 }
 
 variable "public_vm_instance_count" {
-  default = "4"
+  default = "3"
 }
 
 variable "private_vm_instance_count" {
